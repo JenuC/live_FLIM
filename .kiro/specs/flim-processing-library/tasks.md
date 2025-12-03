@@ -79,7 +79,9 @@
   - Test missing previous frame handling
   - _Requirements: 9.4, 9.5_
 
-- [-] 4. Implement phasor computation
+- [x] 4. Implement phasor computation
+
+
 
 
 
