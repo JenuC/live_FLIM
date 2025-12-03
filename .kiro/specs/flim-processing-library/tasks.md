@@ -142,7 +142,9 @@
   - _Requirements: 8.5_
 
 
-- [-] 6. Implement fitting engine
+- [x] 6. Implement fitting engine
+
+
 
 
 
@@ -298,7 +300,10 @@
   - Test custom colormap loading from CSV
   - _Requirements: 4.4_
 
-- [ ] 12. Create example notebooks
+- [-] 12. Create example notebooks
+
+
+
   - Create basic usage example notebook
   - Create streaming example notebook
   - Create selection analysis example notebook
