@@ -300,7 +300,9 @@
   - Test custom colormap loading from CSV
   - _Requirements: 4.4_
 
-- [-] 12. Create example notebooks
+- [x] 12. Create example notebooks
+
+
 
 
 
