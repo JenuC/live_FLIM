@@ -113,6 +113,10 @@
   - **Validates: Requirements 2.1**
 
 - [ ] 5. Implement KDTree for phasor queries
+
+
+
+
   - Implement build_kdtree() method in PhasorComputer
   - Scale phasor coordinates before building tree
   - Replace NaN values with infinity
@@ -135,7 +139,9 @@
   - Test query region with no points returns empty array
   - _Requirements: 8.5_
 
+
 - [ ] 6. Implement fitting engine
+
   - Create FittingEngine class
   - Implement compute_rld() using flimlib.GCI_triple_integral_fitting_engine
   - Implement compute_lma() using flimlib.GCI_marquardt_fitting_engine with RLD initialization

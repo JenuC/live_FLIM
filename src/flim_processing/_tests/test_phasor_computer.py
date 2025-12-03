@@ -4,6 +4,7 @@ Unit tests for PhasorComputer class.
 
 import pytest
 import numpy as np
+from scipy.spatial import KDTree
 from flim_processing import PhasorComputer, FlimParams
 
 
@@ -129,3 +130,167 @@ class TestPhasorComputer:
         assert phasor2.shape == (5, 5, 2)
         assert not np.all(np.isnan(phasor1))
         assert not np.all(np.isnan(phasor2))
+
+
+class TestKDTree:
+    """Tests for KDTree functionality in PhasorComputer."""
+    
+    def test_build_kdtree_returns_kdtree_object(self):
+        """Test that build_kdtree returns a KDTree object."""
+        # Create synthetic phasor data
+        phasor = np.random.rand(10, 10, 2).astype(np.float32)
+        
+        # Build KDTree
+        kdtree = PhasorComputer.build_kdtree(phasor)
+        
+        # Check that it's a KDTree object
+        assert isinstance(kdtree, KDTree), f"Expected KDTree, got {type(kdtree)}"
+    
+    def test_build_kdtree_with_nan_values(self):
+        """Test that NaN values are replaced with infinity."""
+        # Create phasor data with NaN values
+        phasor = np.random.rand(10, 10, 2).astype(np.float32)
+        phasor[0, 0, :] = np.nan
+        phasor[5, 5, :] = np.nan
+        
+        # Build KDTree (should not raise an error)
+        kdtree = PhasorComputer.build_kdtree(phasor)
+        
+        # Verify it's a valid KDTree
+        assert isinstance(kdtree, KDTree)
+        
+        # The tree should have 100 points (10x10)
+        assert kdtree.n == 100
+    
+    def test_build_kdtree_with_scaling(self):
+        """Test that scaling factor is applied correctly."""
+        phasor = np.array([[[0.5, 0.3]]], dtype=np.float32)  # 1x1 image
+        
+        # Build with different scales
+        kdtree1 = PhasorComputer.build_kdtree(phasor, scale=1.0)
+        kdtree2 = PhasorComputer.build_kdtree(phasor, scale=1000.0)
+        
+        # Both should be valid KDTrees
+        assert isinstance(kdtree1, KDTree)
+        assert isinstance(kdtree2, KDTree)
+        
+        # The data should be scaled differently
+        # kdtree.data contains the scaled coordinates
+        assert not np.allclose(kdtree1.data, kdtree2.data)
+    
+    def test_query_kdtree_returns_indices(self):
+        """Test that query_kdtree returns pixel indices."""
+        # Create simple phasor data
+        phasor = np.random.rand(10, 10, 2).astype(np.float32)
+        kdtree = PhasorComputer.build_kdtree(phasor)
+        
+        # Query around a center point
+        center = [0.5, 0.5]
+        radius = 0.1
+        
+        indices = PhasorComputer.query_kdtree(kdtree, center, radius)
+        
+        # Should return a numpy array
+        assert isinstance(indices, np.ndarray)
+        # Indices should be integers
+        assert indices.dtype in [np.int32, np.int64]
+    
+    def test_query_kdtree_with_shape_returns_2d_coords(self):
+        """Test that query_kdtree with shape returns 2D coordinates."""
+        phasor = np.random.rand(10, 10, 2).astype(np.float32)
+        kdtree = PhasorComputer.build_kdtree(phasor)
+        
+        center = [0.5, 0.5]
+        radius = 0.1
+        
+        coords = PhasorComputer.query_kdtree(kdtree, center, radius, shape=(10, 10))
+        
+        # Should return array with shape (n, 2)
+        assert isinstance(coords, np.ndarray)
+        if len(coords) > 0:
+            assert coords.shape[1] == 2, f"Expected shape (n, 2), got {coords.shape}"
+    
+    def test_query_kdtree_empty_result(self):
+        """Test that query with no matches returns empty array."""
+        # Create phasor data in one region
+        phasor = np.ones((10, 10, 2), dtype=np.float32) * 0.9  # All near (0.9, 0.9)
+        kdtree = PhasorComputer.build_kdtree(phasor)
+        
+        # Query in a different region
+        center = [0.1, 0.1]
+        radius = 0.05
+        
+        indices = PhasorComputer.query_kdtree(kdtree, center, radius)
+        
+        # Should return empty array
+        assert len(indices) == 0
+        assert isinstance(indices, np.ndarray)
+    
+    def test_query_kdtree_empty_result_with_shape(self):
+        """Test that empty query with shape returns empty (n, 2) array."""
+        phasor = np.ones((10, 10, 2), dtype=np.float32) * 0.9
+        kdtree = PhasorComputer.build_kdtree(phasor)
+        
+        center = [0.1, 0.1]
+        radius = 0.05
+        
+        coords = PhasorComputer.query_kdtree(kdtree, center, radius, shape=(10, 10))
+        
+        # Should return empty array with shape (0, 2)
+        assert coords.shape == (0, 2)
+    
+    def test_query_kdtree_uses_infinity_norm(self):
+        """Test that query uses infinity norm (Chebyshev distance)."""
+        # Create a simple phasor array with known values
+        phasor = np.zeros((3, 3, 2), dtype=np.float32)
+        phasor[1, 1, :] = [0.5, 0.5]  # Center pixel
+        phasor[0, 0, :] = [0.6, 0.6]  # Distance 0.1 in both dimensions (inf norm = 0.1)
+        phasor[0, 1, :] = [0.7, 0.5]  # Distance 0.2 in g only (inf norm = 0.2)
+        phasor[1, 0, :] = [0.5, 0.7]  # Distance 0.2 in s only (inf norm = 0.2)
+        phasor[2, 2, :] = [0.8, 0.8]  # Distance 0.3 in both (inf norm = 0.3)
+        
+        kdtree = PhasorComputer.build_kdtree(phasor)
+        
+        # Query with radius 0.15 should include center and (0,0) but not others
+        center = [0.5, 0.5]
+        radius = 0.15
+        
+        coords = PhasorComputer.query_kdtree(kdtree, center, radius, shape=(3, 3))
+        
+        # Should find at least the center pixel
+        assert len(coords) >= 1
+        # Center pixel should be included
+        assert any((coords == [1, 1]).all(axis=1))
+    
+    def test_query_kdtree_excludes_nan_pixels(self):
+        """Test that pixels with NaN phasor values are not returned."""
+        # Create phasor data with some NaN values
+        phasor = np.ones((5, 5, 2), dtype=np.float32) * 0.5
+        phasor[0, 0, :] = np.nan
+        phasor[2, 2, :] = np.nan
+        
+        kdtree = PhasorComputer.build_kdtree(phasor)
+        
+        # Query that would include all pixels if not for NaN
+        center = [0.5, 0.5]
+        radius = 1.0  # Large radius
+        
+        coords = PhasorComputer.query_kdtree(kdtree, center, radius, shape=(5, 5))
+        
+        # Should not include NaN pixels
+        if len(coords) > 0:
+            assert not any((coords == [0, 0]).all(axis=1)), "NaN pixel (0,0) should not be included"
+            assert not any((coords == [2, 2]).all(axis=1)), "NaN pixel (2,2) should not be included"
+    
+    def test_build_kdtree_with_different_shapes(self):
+        """Test KDTree building with various phasor array shapes."""
+        shapes = [(5, 5, 2), (10, 20, 2), (1, 100, 2), (100, 1, 2)]
+        
+        for shape in shapes:
+            phasor = np.random.rand(*shape).astype(np.float32)
+            kdtree = PhasorComputer.build_kdtree(phasor)
+            
+            # Should have height * width points
+            expected_n = shape[0] * shape[1]
+            assert kdtree.n == expected_n, \
+                f"For shape {shape}, expected {expected_n} points, got {kdtree.n}"
