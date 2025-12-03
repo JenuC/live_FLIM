@@ -70,13 +70,13 @@ class PhasorComputer:
         return result
     
     @staticmethod
-    def build_kdtree(phasor: np.ndarray, scale: float = 1000.0) -> KDTree:
+    def build_kdtree(phasor: np.ndarray, scale: float = 1000.0) -> tuple:
         """
         Build KD-tree for efficient phasor space queries.
         
         This method constructs a KD-tree spatial index from phasor coordinates
         to enable fast nearest-neighbor queries in phasor space. NaN values
-        are replaced with infinity to exclude them from queries.
+        are excluded from the tree and tracked separately.
         
         Args:
             phasor: Phasor array with shape (height, width, 2) containing
@@ -85,14 +85,16 @@ class PhasorComputer:
                 building the tree (default: 1000.0)
             
         Returns:
-            KDTree object for spatial queries in phasor space
+            Tuple of (KDTree, valid_indices) where:
+                - KDTree: spatial index for valid phasor coordinates
+                - valid_indices: flat indices of valid (non-NaN) pixels
             
         Notes:
             - Phasor coordinates are scaled by the scale factor before building
               the tree to improve numerical precision
-            - NaN values are replaced with infinity, effectively excluding them
-              from query results
+            - NaN values are excluded from the tree entirely
             - The tree uses the infinity norm (Chebyshev distance) for queries
+            - Use valid_indices to map tree query results back to pixel positions
         """
         # Get the original shape
         height, width = phasor.shape[:2]
@@ -100,19 +102,25 @@ class PhasorComputer:
         # Reshape to (height * width, 2) for KDTree construction
         phasor_flat = phasor.reshape(-1, 2)
         
-        # Replace NaN values with infinity
-        # This ensures NaN pixels are excluded from queries
-        phasor_clean = np.where(np.isnan(phasor_flat), np.inf, phasor_flat)
+        # Find valid (non-NaN) pixels
+        # A pixel is valid if both g and s are not NaN
+        valid_mask = ~np.any(np.isnan(phasor_flat), axis=1)
+        valid_indices = np.where(valid_mask)[0]
+        
+        # Extract only valid phasor coordinates
+        phasor_valid = phasor_flat[valid_mask]
         
         # Scale the coordinates
-        phasor_scaled = phasor_clean * scale
+        phasor_scaled = phasor_valid * scale
         
-        # Build and return the KDTree
-        return KDTree(phasor_scaled)
+        # Build and return the KDTree with valid indices
+        kdtree = KDTree(phasor_scaled)
+        
+        return kdtree, valid_indices
     
     @staticmethod
-    def query_kdtree(kdtree: KDTree, center: np.ndarray, radius: float, 
-                     scale: float = 1000.0, shape: tuple = None) -> np.ndarray:
+    def query_kdtree(kdtree: KDTree, valid_indices: np.ndarray, center: np.ndarray, 
+                     radius: float, scale: float = 1000.0, shape: tuple = None) -> np.ndarray:
         """
         Query the KD-tree for pixels within a specified distance.
         
@@ -122,6 +130,7 @@ class PhasorComputer:
         
         Args:
             kdtree: KDTree object built from phasor coordinates
+            valid_indices: Flat indices of valid pixels (from build_kdtree)
             center: Center point for the query as [g, s]
             radius: Distance threshold for the query (in phasor space)
             scale: Scaling factor used when building the tree (default: 1000.0)
@@ -137,31 +146,31 @@ class PhasorComputer:
             - Uses infinity norm (p=np.inf) for distance calculations
             - The center and radius should be in the original phasor space
               (they will be scaled internally)
-            - Points at infinity (NaN in original data) are never returned
+            - NaN pixels are automatically excluded (not in valid_indices)
         """
         # Scale the center and radius to match the tree's coordinate system
         center_scaled = np.array(center) * scale
         radius_scaled = radius * scale
         
         # Query the tree using infinity norm
-        # query_ball_point returns indices of all points within the radius
-        indices = kdtree.query_ball_point(center_scaled, radius_scaled, p=np.inf)
+        # query_ball_point returns indices into the tree (not original pixel indices)
+        tree_indices = kdtree.query_ball_point(center_scaled, radius_scaled, p=np.inf)
         
-        # Convert to numpy array
-        indices = np.array(indices, dtype=np.int64)
-        
-        # If no points found, return empty array
-        if len(indices) == 0:
+        # Convert tree indices to original flat pixel indices
+        if len(tree_indices) == 0:
             if shape is not None:
                 return np.empty((0, 2), dtype=np.int64)
             else:
                 return np.empty(0, dtype=np.int64)
         
+        # Map tree indices back to original flat pixel indices
+        flat_indices = valid_indices[tree_indices]
+        
         # If shape is provided, convert flat indices to 2D coordinates
         if shape is not None:
             height, width = shape
-            y_coords = indices // width
-            x_coords = indices % width
+            y_coords = flat_indices // width
+            x_coords = flat_indices % width
             return np.column_stack([y_coords, x_coords])
         
-        return indices
+        return flat_indices

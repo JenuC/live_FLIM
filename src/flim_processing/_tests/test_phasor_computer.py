@@ -136,39 +136,48 @@ class TestKDTree:
     """Tests for KDTree functionality in PhasorComputer."""
     
     def test_build_kdtree_returns_kdtree_object(self):
-        """Test that build_kdtree returns a KDTree object."""
+        """Test that build_kdtree returns a KDTree object and valid indices."""
         # Create synthetic phasor data
         phasor = np.random.rand(10, 10, 2).astype(np.float32)
         
         # Build KDTree
-        kdtree = PhasorComputer.build_kdtree(phasor)
+        kdtree, valid_indices = PhasorComputer.build_kdtree(phasor)
         
         # Check that it's a KDTree object
         assert isinstance(kdtree, KDTree), f"Expected KDTree, got {type(kdtree)}"
+        # Check that valid_indices is a numpy array
+        assert isinstance(valid_indices, np.ndarray)
+        # All pixels should be valid (no NaN)
+        assert len(valid_indices) == 100
     
     def test_build_kdtree_with_nan_values(self):
-        """Test that NaN values are replaced with infinity."""
+        """Test that NaN values are excluded from the tree."""
         # Create phasor data with NaN values
         phasor = np.random.rand(10, 10, 2).astype(np.float32)
         phasor[0, 0, :] = np.nan
         phasor[5, 5, :] = np.nan
         
         # Build KDTree (should not raise an error)
-        kdtree = PhasorComputer.build_kdtree(phasor)
+        kdtree, valid_indices = PhasorComputer.build_kdtree(phasor)
         
         # Verify it's a valid KDTree
         assert isinstance(kdtree, KDTree)
         
-        # The tree should have 100 points (10x10)
-        assert kdtree.n == 100
+        # The tree should have 98 points (100 - 2 NaN pixels)
+        assert kdtree.n == 98
+        assert len(valid_indices) == 98
+        
+        # NaN pixel flat indices should not be in valid_indices
+        assert 0 not in valid_indices  # pixel (0, 0)
+        assert 55 not in valid_indices  # pixel (5, 5) = 5*10 + 5
     
     def test_build_kdtree_with_scaling(self):
         """Test that scaling factor is applied correctly."""
         phasor = np.array([[[0.5, 0.3]]], dtype=np.float32)  # 1x1 image
         
         # Build with different scales
-        kdtree1 = PhasorComputer.build_kdtree(phasor, scale=1.0)
-        kdtree2 = PhasorComputer.build_kdtree(phasor, scale=1000.0)
+        kdtree1, valid1 = PhasorComputer.build_kdtree(phasor, scale=1.0)
+        kdtree2, valid2 = PhasorComputer.build_kdtree(phasor, scale=1000.0)
         
         # Both should be valid KDTrees
         assert isinstance(kdtree1, KDTree)
