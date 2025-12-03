@@ -17,6 +17,7 @@ from flim_processing._dataclasses import (
     SelectionResult,
     EndSeries,
 )
+from flim_processing._stream_receiver import StreamReceiver
 
 __all__ = [
     "FlimParams",
@@ -28,6 +29,7 @@ __all__ = [
     "LMAResult",
     "SelectionResult",
     "EndSeries",
+    "StreamReceiver",
 ]
 
 __version__ = "0.1.0"
