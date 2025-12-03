@@ -1,6 +1,7 @@
 # Implementation Plan
 
-- [-] 1. Set up project structure and core data models
+- [ ] 1. Set up project structure and core data models
+
 
 
 
