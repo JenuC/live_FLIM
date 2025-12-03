@@ -20,6 +20,7 @@ from flim_processing._dataclasses import (
 from flim_processing._stream_receiver import StreamReceiver
 from flim_processing._data_manager import DataManager
 from flim_processing._phasor_computer import PhasorComputer
+from flim_processing._fitting_engine import FittingEngine
 
 __all__ = [
     "FlimParams",
@@ -34,6 +35,7 @@ __all__ = [
     "StreamReceiver",
     "DataManager",
     "PhasorComputer",
+    "FittingEngine",
 ]
 
 __version__ = "0.1.0"

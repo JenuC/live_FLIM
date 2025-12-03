@@ -142,7 +142,10 @@
   - _Requirements: 8.5_
 
 
-- [ ] 6. Implement fitting engine
+- [-] 6. Implement fitting engine
+
+
+
 
   - Create FittingEngine class
   - Implement compute_rld() using flimlib.GCI_triple_integral_fitting_engine
