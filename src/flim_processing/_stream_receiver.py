@@ -106,10 +106,16 @@ class StreamReceiver:
                 dirpath=msg.dirpath
             )
             
+            # Determine the extracted shape (remove leading dimensions if > 3D)
+            extracted_shape = msg.shape
+            if len(msg.shape) > 3:
+                # Will extract to last 3 dimensions
+                extracted_shape = msg.shape[-3:]
+            
             yield SeriesMetadata(
                 series_no=series_no,
                 port=self.port,
-                shape=msg.shape,
+                shape=extracted_shape,  # Report extracted shape, not original
                 dtype=msg.dtype
             )
             
