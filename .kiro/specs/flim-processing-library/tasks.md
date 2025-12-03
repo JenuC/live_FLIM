@@ -49,7 +49,9 @@
   - Test memory-mapped file reading
   - _Requirements: 1.1, 1.3, 1.5_
 
-- [-] 3. Implement data manager
+- [x] 3. Implement data manager
+
+
 
 
 
@@ -77,7 +79,10 @@
   - Test missing previous frame handling
   - _Requirements: 9.4, 9.5_
 
-- [ ] 4. Implement phasor computation
+- [-] 4. Implement phasor computation
+
+
+
   - Create PhasorComputer class
   - Implement compute_phasor() using flimlib.GCI_Phasor
   - Apply fit range parameters (fit_start, fit_end)
