@@ -88,7 +88,8 @@ class DataManager:
         
         Snapshots are frozen copies of frames that can be accessed later.
         The snapshot is stored independently, so modifications to the live
-        frame don't affect it.
+        frame don't affect it. After snapshotting, the live frame is cleared
+        to make room for new data.
         
         In delta mode, the snapshot stores the actual frame data (not deltas).
         """
@@ -103,6 +104,10 @@ class DataManager:
         # Update previous frame for delta computation
         if self.delta_mode:
             self._previous_frame = snapshot_frame.copy()
+        
+        # Clear live frame after snapshotting
+        self._live_frame = None
+        self._live_seqno = -1
         
         logging.info(f"Created snapshot {len(self._snapshots) - 1}")
     
