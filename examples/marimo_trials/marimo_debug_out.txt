@@ -1,0 +1,9 @@
+DEBUG: failed importing marimo:
+DEBUG: sys.executable = C:\Users\lociuser\code\jenu\.venv\Scripts\python.exe
+DEBUG: sys.path = ['C:\\Users\\lociuser\\AppData\\Roaming\\uv\\python\\cpython-3.12.9-windows-x86_64-none\\Lib\\site-packages', 'C:\\Users\\lociuser\\code\\jenu\\live_FLIM\\examples', 'C:\\Users\\lociuser\\AppData\\Roaming\\uv\\python\\cpython-3.12.9-windows-x86_64-none\\python312.zip', 'C:\\Users\\lociuser\\AppData\\Roaming\\uv\\python\\cpython-3.12.9-windows-x86_64-none\\DLLs', 'C:\\Users\\lociuser\\AppData\\Roaming\\uv\\python\\cpython-3.12.9-windows-x86_64-none\\Lib', 'C:\\Users\\lociuser\\AppData\\Roaming\\uv\\python\\cpython-3.12.9-windows-x86_64-none', 'C:\\Users\\lociuser\\code\\jenu\\.venv', 'C:\\Users\\lociuser\\code\\jenu\\.venv\\Lib\\site-packages', 'C:\\Users\\lociuser\\code\\jenu\\live_FLIM\\src', 'C:\\Users\\lociuser\\code\\jenu\\.venv\\Lib\\site-packages\\win32', 'C:\\Users\\lociuser\\code\\jenu\\.venv\\Lib\\site-packages\\win32\\lib', 'C:\\Users\\lociuser\\code\\jenu\\.venv\\Lib\\site-packages\\Pythonwin']
+Traceback (most recent call last):
+  File "C:\Users\lociuser\code\jenu\live_FLIM\examples\marimo-streamer.py", line 52, in <module>
+    from marimo import dashboard as md
+ImportError: cannot import name 'dashboard' from 'marimo' (C:\Users\lociuser\code\jenu\.venv\Lib\site-packages\marimo\__init__.py)
+Generated at 2025-12-03T13:28:07.700Z
+Marimo not present; running CLI preview for 5 seconds
